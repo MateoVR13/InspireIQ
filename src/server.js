@@ -6,11 +6,27 @@ import flash from 'connect-flash';
 import multer from 'multer';
 import indexRoutes from './routes/routes.js';
 import path from 'path';
+import MySQLStore from 'express-mysql-session';
 const app = express();
+
+// Create MySQL session store
+const MySQLStoreSession = MySQLStore(session);
+const sessionStore = new MySQLStoreSession({
+  host: 'autorack.proxy.rlwy.net',
+  port: 32235,
+  user: 'root',
+  password: 'itxUoywNJeozixvuVIpadbyTfGpxcoil',
+  database: 'railway',
+  clearExpired: true,
+  checkExpirationInterval: 900000, // 15 minutes
+  expiration: 86400000, // 24 hours
+});
 
 // Configuración de express-session
 app.use(session({
+  key: 'session_cookie_name',
   secret: 'tusecretoestáasalvo', // Cambia esto por una cadena secreta larga y aleatoria
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: { 

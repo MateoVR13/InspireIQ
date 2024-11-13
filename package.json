@@ -19,6 +19,7 @@
     "connect-flash": "^0.1.1",
     "ejs": "^3.1.10",
     "express": "^4.21.1",
+    "express-mysql-session": "^3.0.3",
     "express-session": "^1.18.1",
     "favicon": "^0.0.2",
     "flash": "^1.1.0",
