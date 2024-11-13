@@ -44,41 +44,46 @@ async function loginUser(email, password, req) {
       throw new Error('Contraseña incorrecta');
     }
 
+    // Configure session cookie for domain
+    req.session.cookie.secure = true; // For HTTPS
+    req.session.cookie.sameSite = 'strict';
+    req.session.cookie.domain = 'inspire-iq.onrender.com'; // Set your domain
+    req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
     // Set session data
     req.session.userId = user.user_id;
     req.session.userRole = user.role;
-    req.session.authenticated = true; // Add this line
+    req.session.authenticated = true;
+    req.session.lastAccess = new Date();
     
-    console.log('Setting session data:', {
+    console.log('Session data before save:', {
+      id: req.session.id,
       userId: req.session.userId,
       userRole: req.session.userRole,
-      authenticated: req.session.authenticated
+      authenticated: req.session.authenticated,
+      cookie: req.session.cookie
     });
 
-    // Save session explicitly
-    try {
-      await new Promise((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) {
-            console.error('Session save error:', err);
-            reject(new Error('Error al guardar la sesión'));
-          }
-          resolve();
-        });
+    // Save session with Promise wrapper
+    await new Promise((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          reject(new Error('Error al guardar la sesión'));
+        }
+        console.log('Session saved successfully');
+        resolve();
       });
-    } catch (err) {
-      console.error('Session save failed:', err);
-      throw new Error('Error al inicializar la sesión');
-    }
+    });
 
-    return { 
-      userId: user.user_id, 
+    return {
+      userId: user.user_id,
       role: user.role,
-      sessionId: req.session.id // Add this for debugging
+      sessionId: req.session.id
     };
   } catch (err) {
     console.error('Login error details:', err);
-    throw new Error('Error al iniciar sesión. Verifica tus credenciales e inténtalo de nuevo.');
+    throw new Error('Error al iniciar sesión: ' + (err.message || 'Error desconocido'));
   }
 }
 
