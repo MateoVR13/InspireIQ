@@ -26,6 +26,12 @@ async function registerUser(name, lastname, email, password, role) {
 // Función para iniciar sesión
 async function loginUser(email, password, req) {
   try {
+    // Validate session object early
+    if (!req || !req.session) {
+      console.error('Session object not available');
+      throw new Error('Sesión no disponible');
+    }
+
     // Consultar si el usuario existe en la base de datos
     const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (users.length === 0) {
@@ -38,26 +44,40 @@ async function loginUser(email, password, req) {
       throw new Error('Contraseña incorrecta');
     }
 
-    if (!req || !req.session) {
-      throw new Error('Sesión no disponible');
-    }
-
-    // Guardar el userId y userRole en la sesión
+    // Set session data
     req.session.userId = user.user_id;
     req.session.userRole = user.role;
-    console.log("Sesión iniciada: userId =", req.session.userId, ", userRole =", req.session.userRole);
+    req.session.authenticated = true; // Add this line
     
-
-    await new Promise((resolve, reject) => {
-      req.session.save(err => {
-        if (err) return reject(new Error('Error al guardar la sesión'));
-        resolve();
-      });
+    console.log('Setting session data:', {
+      userId: req.session.userId,
+      userRole: req.session.userRole,
+      authenticated: req.session.authenticated
     });
 
-    return { userId: user.user_id, role: user.role };
+    // Save session explicitly
+    try {
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            reject(new Error('Error al guardar la sesión'));
+          }
+          resolve();
+        });
+      });
+    } catch (err) {
+      console.error('Session save failed:', err);
+      throw new Error('Error al inicializar la sesión');
+    }
+
+    return { 
+      userId: user.user_id, 
+      role: user.role,
+      sessionId: req.session.id // Add this for debugging
+    };
   } catch (err) {
-    console.error('Error detallado en el inicio de sesión:', err.message);
+    console.error('Login error details:', err);
     throw new Error('Error al iniciar sesión. Verifica tus credenciales e inténtalo de nuevo.');
   }
 }
